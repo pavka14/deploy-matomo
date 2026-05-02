@@ -31,9 +31,10 @@ github_user: "{{ lookup('env', 'GITHUB_USER') }}"
 github_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"
 
 # SSL
-letsencrypt_email: "{{ lookup('env', 'LETSENCRYPT_EMAIL') }}"
-ssl_cert_path: "/etc/letsencrypt/live/{{ lookup('env', 'DJANGO_HOST') }}/fullchain.pem"
-ssl_key_path: "/etc/letsencrypt/live/{{ lookup('env', 'DJANGO_HOST') }}/privkey.pem"
+ssl_domain: "{{ lookup('env', 'DJANGO_DOMAIN') }}"
+ssl_email: "{{ lookup('env', 'LETSENCRYPT_EMAIL') }}"
+ssl_cert_path: "/etc/letsencrypt/live/{{ lookup('env', 'DJANGO_DOMAIN') }}/fullchain.pem"
+ssl_key_path: "/etc/letsencrypt/live/{{ lookup('env', 'DJANGO_DOMAIN') }}/privkey.pem"
 
 # GeoIP2
 geoip_account_id: "{{ lookup('env', 'GEOIP_ACCOUNT_ID') }}"

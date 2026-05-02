@@ -41,7 +41,7 @@
 
       - name: Ensure directory for Let's Encrypt files exists
         ansible.builtin.file:
-          path: "/etc/letsencrypt/live/{{ django_host }}"
+          path: "/etc/letsencrypt/live/{{ ssl_domain }}"
           state: directory
           owner: root
           group: root
@@ -50,16 +50,16 @@
 
       - name: Generate private key if missing
         community.crypto.openssl_privatekey:
-          path: "/etc/letsencrypt/live/{{ django_host }}/privkey.pem"
+          path: "/etc/letsencrypt/live/{{ ssl_domain }}/privkey.pem"
           size: 2048
           state: present
         become: yes
 
       - name: Generate CSR if missing
         community.crypto.openssl_csr:
-          path: "/etc/letsencrypt/live/{{ django_host }}/{{ django_host }}.csr"
-          privatekey_path: "/etc/letsencrypt/live/{{ django_host }}/privkey.pem"
-          common_name: "{{ django_host }}"
+          path: "/etc/letsencrypt/live/{{ ssl_domain }}/{{ ssl_domain }}.csr"
+          privatekey_path: "/etc/letsencrypt/live/{{ ssl_domain }}/privkey.pem"
+          common_name: "{{ ssl_domain }}"
           state: present
         become: yes
 
@@ -68,9 +68,9 @@
         community.crypto.acme_certificate:
           account_key_src: /etc/letsencrypt/account.key
           account_email: "{{ ssl_email }}"
-          csr: /etc/letsencrypt/live/{{ django_host }}/{{ django_host }}.csr
-          dest: /etc/letsencrypt/live/{{ django_host }}/cert.pem
-          fullchain_dest: /etc/letsencrypt/live/{{ django_host }}/fullchain.pem
+          csr: /etc/letsencrypt/live/{{ ssl_domain }}/{{ ssl_domain }}.csr
+          dest: /etc/letsencrypt/live/{{ ssl_domain }}/cert.pem
+          fullchain_dest: /etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem
           challenge: http-01
           terms_agreed: yes
           acme_version: 2
@@ -105,9 +105,9 @@
         community.crypto.acme_certificate:
           account_key_src: /etc/letsencrypt/account.key
           account_email: "{{ ssl_email }}"
-          csr: /etc/letsencrypt/live/{{ django_host }}/{{ django_host }}.csr
-          dest: /etc/letsencrypt/live/{{ django_host }}/cert.pem
-          fullchain_dest: /etc/letsencrypt/live/{{ django_host }}/fullchain.pem
+          csr: /etc/letsencrypt/live/{{ ssl_domain }}/{{ ssl_domain }}.csr
+          dest: /etc/letsencrypt/live/{{ ssl_domain }}/cert.pem
+          fullchain_dest: /etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem
           challenge: http-01
           terms_agreed: yes
           acme_version: 2
@@ -115,15 +115,16 @@
           data: "{{ acme_response }}"
 
       # 8. Clean up.
-      - name: Remove .well-known directory after challenge
-        file:
-          path: /var/www/html/.well-known
-          state: absent
+      # This should probably not be done, the directory is used again when the certificate is re-issued later.
+      #- name: Remove .well-known directory after challenge
+      #  file:
+      #    path: /var/www/html/.well-known
+      #    state: absent
 
       # 9. Make sure it all actually worked. Without fullchain.pem nginx will not be able to serve HTTPS.
       - name: Check if fullchain.pem was created
         stat:
-          path: /etc/letsencrypt/live/{{ django_host }}/fullchain.pem
+          path: /etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem
         register: fullchain_status
 
       - name: Fail if fullchain.pem does not exist

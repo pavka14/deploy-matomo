@@ -1,5 +1,5 @@
 ---
-# install geoupdate and GeoIP2. Used by nginx (through a nginx module).
+# Install geoupdate and GeoIP2. Used by nginx (through a nginx module).
 - name: Install geoupdate and GeoIP2
   hosts: django_servers
   vars_files:

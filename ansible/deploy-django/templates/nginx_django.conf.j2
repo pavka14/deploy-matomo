@@ -1,21 +1,33 @@
 server {
     listen 80;
-    server_name {{ django_host }};
+    server_name {{ ssl_domain }};
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name {{ django_host }};
+    server_name {{ ssl_domain }};
+
+    # GeoIP2 config
+    # This sub-file needs to be moved to another place, and included in the main nginx.conf.
+    # include /etc/nginx/sites-available/geoip2.conf;
+
+    # Run as web_user/web_group
+    # It seems setting the user per server doesn't work like this?
+    #user {{ web_user }} {{ web_group }};
 
     ssl_certificate {{ ssl_cert_path }};
     ssl_certificate_key {{ ssl_key_path }};
 
-    # GeoIP2 config
-    include /etc/nginx/geoip2.conf;
+    access_log /var/log/nginx/{{ django_project_name }}.access.log;
+    error_log /var/log/nginx/{{ django_project_name }}.error.log;
 
-    # Run as web_user/web_group
-    user {{ web_user }} {{ web_group }};
+    # Needed by certbot to renew the SSL certificate periodically.
+    location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+        allow all;
+        try_files $uri =404;
+    }
 
     location /static/ {
         alias {{ django_app_dir }}/static/;

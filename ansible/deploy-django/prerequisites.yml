@@ -39,22 +39,3 @@
         name: fail2ban
         state: started
         enabled: yes
-    - name: Ensure application group exists
-      group:
-        name: "{{ web_group }}"
-        state: present
-    - name: Ensure application user exists
-      user:
-        name: "{{ web_user }}"
-        group: "{{ web_group }}"
-        shell: /bin/bash
-        password_lock: yes
-        create_home: yes
-        state: present
-    - name: Ensure Django app directory is owned by application user/group
-      file:
-        path: "{{ django_app_dir }}"
-        owner: "{{ web_user }}"
-        group: "{{ web_group }}"
-        state: directory
-        recurse: yes
