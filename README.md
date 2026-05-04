@@ -33,6 +33,11 @@ These playbooks are designed for hobbyist webmasters and small-scale deployments
 - "Install once" approach rather than enterprise-scale orchestration
 - Clear documentation and examples
 
+## Known Issues
+
+- it seems that the SSL installation in deploy-matomo installs certbot and creates a certificate, but this does not renew on expiry; this needs to be investigated and fixed.
+- additionally to the above, when the certificate does update, nginx needs to be reloaded by the cron job, otherwise it still keeps using the old certificate.
+
 ## Future Plans
 
 More playbooks will be added over time to cover additional common web hosting scenarios and applications.

@@ -24,4 +24,5 @@
       import_playbook: django.yml
     - name: Setup Uvicorn systemd service
       import_playbook: uvicorn.yml
-
+    - name: Save configurations
+      import_playbook: save_configurations.yml

@@ -5,39 +5,63 @@
   gather_facts: no
   vars_files:
     - variables.yml
+
   pre_tasks:
     - name: Ensure github_repo is set
       ansible.builtin.fail:
         msg: "github_repo variable is not set!"
       when: github_repo is not defined or github_repo|length == 0
+
     - name: Ensure django_app_dir is set
       ansible.builtin.fail:
         msg: "django_app_dir variable is not set!"
       when: django_app_dir is not defined or django_app_dir|length == 0
+
     - name: Ensure github_token is set
       ansible.builtin.fail:
         msg: "github_token variable is not set!"
       when: github_token is not defined or github_token|length == 0
+
     - name: Ensure github_user is set
       ansible.builtin.fail:
         msg: "github_user variable is not set!"
       when: github_user is not defined or github_user|length == 0
+
+    - name: Ensure application group exists
+      group:
+        name: "{{ web_group }}"
+        state: present
+
+    - name: Ensure application user exists
+      user:
+        name: "{{ web_user }}"
+        group: "{{ web_group }}"
+        shell: /bin/bash
+        password_lock: yes
+        create_home: yes
+        state: present
+
   tasks:
     - name: Print github_repo
       ansible.builtin.debug:
         msg: "github_repo={{ github_repo }}"
+
     - name: Print django_app_dir
       ansible.builtin.debug:
         msg: "django_code_dir={{ django_code_dir }}"
+
     - name: Print github_token (first 6 chars for safety)
       ansible.builtin.debug:
         msg: "github_token={{ github_token[:6] }}..."
+
     - name: Print github_user
       ansible.builtin.debug:
         msg: "github_user={{ github_user }}"
+
     - name: Print credential line (masked token)
       ansible.builtin.debug:
         msg: "https://{{ github_user }}:{{ github_token[:6] }}...@github.com"
+
     - name: Configure git credential helper with GitHub token
       become: yes
       become_user: "{{ web_user }}"
@@ -46,9 +70,20 @@
         echo "https://{{ github_user }}:{{ github_token }}@github.com" > ~/.git-credentials
       args:
         executable: /bin/bash
+
+    - name: Ensure destination directory exists and has correct ownership
+      become: yes
+      ansible.builtin.file:
+        path: "{{ django_code_dir }}"
+        state: directory
+        owner: "{{ web_user }}"
+        group: "{{ web_group }}"
+        mode: "0755"
+
     - name: Starting git clone
       ansible.builtin.debug:
         msg: "Starting git clone of Django repository..."
+
     - name: Clone Django repository
       become: yes
       become_user: "{{ web_user }}"
@@ -57,22 +92,34 @@
         dest: "{{ django_code_dir }}"
         version: master
         force: yes
+        update: yes
         accept_hostkey: yes
       register: git_result
-      ignore_errors: yes
+
     - name: Show git clone result
       ansible.builtin.debug:
         var: git_result
+
+    - name: Ensure Django app directory is owned by application user/group
+      file:
+        path: "{{ django_app_dir }}"
+        owner: "{{ web_user }}"
+        group: "{{ web_group }}"
+        state: directory
+        recurse: yes
+
     - name: Copy .env file
       become: yes
       become_user: "{{ web_user }}"
       copy:
         src: "django.env"
         dest: "{{ django_settings_dir }}/.env"
+
     - name: Install requirements
       become: yes
       become_user: "{{ web_user }}"
       command: "{{ django_venv_path }}/bin/pip install -r {{ django_code_dir }}/requirements.txt"
+
     - name: Run migrations
       # DJANGO_ENV=production is an example of how to set environment variables for the command.
       # Your site does NOT need it. Change it to anything that your site does need.
@@ -83,6 +130,7 @@
         chdir: "{{ django_app_dir }}"
       environment:
         DJANGO_ENV: production
+
     - name: Restart systemd service for Uvicorn
       systemd:
         name: uvicorn.service

@@ -1,0 +1,54 @@
+---
+# To be run after everything has been installed.
+- name: Save various configurations
+  hosts: django_servers
+  become: yes
+  vars_files:
+    - variables.yml
+
+  tasks:
+    - name: Remove existing ssl_domain site configuration file if it exists
+      # Delete conf files if they are left over from maybe earlier unsuccessful runs of the playbook.
+      # They will be re-created below.
+      file:
+        path: "/etc/nginx/sites-enabled/{{ ssl_domain }}.conf"
+        state: absent
+      become: yes
+
+    # This is wrong, the content of the template should be added to the main nginx.conf file.
+    # Nginx virtual host templates - main site  plus GeoIP2 configuration.
+    #- name: Save GeoIP2 config
+    #  template:
+    #    src: geoip2.conf.j2
+    #    dest: /etc/nginx/sites-available/geoip2.conf
+
+    # This is wrong, the content of the template should be added to the main nginx.conf file.
+    #- name: Add GeoIP2 to nginx configuration
+    #  file:
+    #   src: /etc/nginx/sites-available/geoip2.conf
+    #    dest: /etc/nginx/sites-enabled/geoip2.conf
+    #    state: link
+
+    - name: Save ssl_domain config
+      template:
+        src: nginx_django.conf.j2
+        dest: /etc/nginx/sites-available/{{ ssl_domain }}.conf
+
+    - name: Enable the site
+      file:
+        src: /etc/nginx/sites-available/{{ ssl_domain }}.conf
+        dest: /etc/nginx/sites-enabled/{{ ssl_domain }}.conf
+        state: link
+
+    - name: Reload systemd
+      command: systemctl daemon-reload
+
+    - name: Enable and start Uvicorn service
+      systemd:
+        name: uvicorn.service
+        state: reloaded
+
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded

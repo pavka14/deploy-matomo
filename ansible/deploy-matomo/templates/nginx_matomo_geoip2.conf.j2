@@ -17,6 +17,13 @@ server {
     access_log /var/log/nginx/matomo.access.log;
     error_log /var/log/nginx/matomo.error.log;
 
+    # Needed by certbot to renew the SSL certificate periodically.
+    location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+        allow all;
+        try_files $uri =404;
+    }
+
     location / {
         try_files $uri $uri/ /index.php?$args;
     }

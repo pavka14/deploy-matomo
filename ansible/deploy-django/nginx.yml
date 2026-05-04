@@ -6,7 +6,7 @@
   become: yes
 
   tasks:
-    # Stop and disable apache2 if present
+    # Stop and disable apache2 if present, to avoid conflicts about ports being in use.
     - name: Stop and disable apache2 service if it exists
       systemd:
         name: apache2

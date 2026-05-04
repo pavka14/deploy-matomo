@@ -12,9 +12,15 @@
           - python3-venv
           - python3-pip
         state: present
+
     - name: Create virtual environment
+      # Note that this will come with the default python version.
+      # You will need to edit the playbook if you want to use a specific other version (e.g., python3.8 -m venv)
+      become: yes
+      become_user: "{{ web_user }}"
       command: python3 -m venv {{ django_venv_path }}
       args:
         creates: "{{ django_venv_path }}/bin/activate"
+
     - name: Upgrade pip and wheel in venv
       command: "{{ django_venv_path }}/bin/pip install --upgrade pip wheel"

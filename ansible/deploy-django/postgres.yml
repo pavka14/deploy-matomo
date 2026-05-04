@@ -12,23 +12,35 @@
           - postgresql
           - postgresql-contrib
         state: present
+
+    - name: Ensure Postgres data directory has correct permissions
+      ansible.builtin.file:
+        path: /var/lib/postgresql
+        owner: postgres
+        group: postgres
+        mode: '0700'
+        state: directory
+
     - name: Ensure PostgreSQL is running
       service:
         name: postgresql
         state: started
         enabled: yes
+
     - name: Install pip and psycopg2 dependencies for Ansible PostgreSQL modules
       apt:
         name:
           - python3-pip
           - python3-psycopg2
         state: present
+
     - name: Create database user
       become_user: postgres
       community.postgresql.postgresql_user:
         name: "{{ db_user }}"
         password: "{{ db_password }}"
         state: present
+
     - name: Create database
       become_user: postgres
       community.postgresql.postgresql_db:
